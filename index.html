@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOY BOUTIQUE - Virtual Try-On</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(120deg, #ffe6f0 0%, #ffd9e6 100%); line-height: 1.6; color: #333; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex-wrap: wrap; }
+        .logo { font-size: 1.8rem; font-weight: bold; letter-spacing: 1px; color: white !important; }
+        nav ul { display: flex; list-style: none; gap: 1.5rem; }
+        nav a { text-decoration: none; color: white !important; font-weight: 500; transition: color 0.3s; }
+        nav a:hover { color: #ffd966 !important; }
+        #cartCount, #likeCount { background: #ff6b6b; color: white; border-radius: 20px; padding: 0.2rem 0.5rem; font-size: 0.8rem; margin-left: 0.3rem; font-weight: bold; }
+        .hero { text-align: center; padding: 4rem 2rem; background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .hero h1 { font-size: 2.2rem; margin-bottom: 1.5rem; color: white; }
+        .btn-shop { display: inline-block; padding: 0.8rem 2rem; background: white; color: #f5576c; text-decoration: none; border-radius: 40px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: background 0.3s, transform 0.2s; }
+        .btn-shop:hover { background: #ffd966; color: #333; transform: scale(1.02); }
+        .search-container { text-align: center; margin: 2rem auto; }
+        #searchInput { width: 80%; max-width: 500px; padding: 0.8rem 1rem; border: 1px solid #ddd; border-radius: 30px; font-size: 1rem; outline: none; transition: border 0.3s, box-shadow 0.3s; }
+        #searchInput:focus { border-color: #ff6b6b; box-shadow: 0 0 0 2px rgba(255,107,107,0.2); }
+        .products { padding: 2rem 2rem 3rem; text-align: center; }
+        .products h2 { font-size: 2rem; margin-bottom: 0.5rem; color: #2c3e50; }
+        .subtitle { color: #7f8c8d; margin-bottom: 2rem; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .product-card { background: white; border-radius: 20px; padding: 1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; text-align: center; display: flex; flex-direction: column; height: 100%; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,0.15), 0 0 0 2px #ff6b6b, 0 0 0 4px #ffd93d; }
+        .product-card img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; background: #f0f0f0; }
+        .product-card h3 { margin: 0.75rem 0 0.25rem; font-size: 1.2rem; color: #2c3e50; }
+        .price { margin: 0.25rem 0; }
+        .current { font-size: 1.3rem; font-weight: bold; color: #e67e22; }
+        .old { text-decoration: line-through; color: #aaa; margin-left: 0.5rem; font-size: 0.9rem; }
+        .free-delivery { display: inline-block; background: #2ecc71; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.75rem; margin: 0.5rem 0; }
+        .buttons { display: flex; justify-content: center; gap: 0.5rem; margin-top: auto; }
+        button { padding: 0.5rem 1rem; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; transition: background 0.3s, transform 0.1s; }
+        .add-btn { background: linear-gradient(95deg, #00b4db, #0083b0); color: white; }
+        .add-btn:hover { background: linear-gradient(95deg, #0083b0, #00b4db); }
+        .tryon-btn { background: linear-gradient(95deg, #ff8c00, #ff2e00); color: white; }
+        .tryon-btn:hover { background: linear-gradient(95deg, #ff2e00, #ff8c00); }
+        .like-btn { background: none; font-size: 1.2rem; padding: 0.5rem; transition: transform 0.2s; }
+        .like-btn:hover { transform: scale(1.2); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: linear-gradient(135deg, #fff, #f8f9fa); border: 2px solid #ff6b6b; padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; position: relative; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .close { position: absolute; top: 12px; right: 18px; font-size: 1.8rem; cursor: pointer; color: #aaa; }
+        .close:hover { color: #333; }
+        canvas { width: 100%; max-width: 300px; margin: 1rem 0; border: 1px solid #ccc; background: #f0f0f0; }
+        #demoTryOn { background: #e67e22; color: white; margin-top: 0.5rem; }
+        @media (max-width: 768px) { header { flex-direction: column; gap: 1rem; text-align: center; } nav ul { gap: 1rem; } .hero h1 { font-size: 1.6rem; } .hero { padding: 2rem 1rem; } .products { padding: 1rem; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">JON BOUTIQUE</div>
+        <nav>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="cart.html">Cart <span id="cartCount">0</span></a></li>
+                <li><a href="#">Login</a></li>
+                <li><a href="liked.html">Like <span id="likeCount">0</span></a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Your Perfect Fit Awaits - Experience the Magic of Virtual Try-On</h1>
+        <a href="#products" class="btn-shop">+ SHOP NOW +</a>
+    </section>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search products...">
+    </div>
+
+    <section id="products" class="products">
+        <h2>Our Exclusive Collection</h2>
+        <p class="subtitle">Discover your perfect style with perfect fit</p>
+        <div class="product-grid" id="productGrid">
+            <!-- Product 1 -->
+            <div class="product-card" data-name="modelmix">
+                <img src="modelmix.jpg" alt="modelmix">
+                <h3>t-shirt</h3>
+                <div class="price"><span class="current">₹160</span><span class="old">₹176</span></div>
+                <span class="free-delivery">FREE DELIVERY</span>
+                <div class="buttons">
+                    <button class="add-btn">ADD</button>
+                    <button class="like-btn">🤍</button>
+                    <button class="tryon-btn">TRY ON</button>
+                </div>
+            </div>
+            <!-- Product 2 -->
+            <div class="product-card" data-name="bodycon">
+                <img src="bodycon.jpg" alt="bodycon">
+                <h3>bodycon</h3>
+                <div class="price"><span class="current">₹308</span></div>
+                <span class="free-delivery">FREE DELIVERY</span>
+                <div class="buttons">
+                    <button class="add-btn">ADD</button>
+                    <button class="like-btn">🤍</button>
+                    <button class="tryon-btn">TRY ON</button>
+                </div>
+            </div>
+            <!-- Product 3 -->
+            <div class="product-card" data-name="Shirt">
+                <img src="shirt.jpg" alt="Shirt">
+                <h3>Shirt</h3>
+                <div class="price"><span class="current">₹150</span><span class="old">₹157</span></div>
+                <span class="free-delivery">FREE DELIVERY</span>
+                <div class="buttons">
+                    <button class="add-btn">ADD</button>
+                    <button class="like-btn">🤍</button>
+                    <button class="tryon-btn">TRY ON</button>
+                </div>
+            </div>
+            <!-- Product 4 -->
+            <div class="product-card" data-name="max">
+                <img src="max.jpg" alt="max">
+                <h3>max</h3>
+                <div class="price"><span class="current">₹450</span><span class="old">₹500</span></div>
+                <span class="free-delivery">FREE DELIVERY</span>
+                <div class="buttons">
+                    <button class="add-btn">ADD</button>
+                    <button class="like-btn">🤍</button>
+                    <button class="tryon-btn">TRY ON</button>
+                </div>
+            </div>
+            <!-- Product 5 -->
+            <div class="product-card" data-name="Floral">
+                <img src="Floral.jpg" alt="Floral">
+                <h3>Floral</h3>
+                <div class="price"><span class="current">₹530</span><span class="old">₹500</span></div>
+                <span class="free-delivery">FREE DELIVERY</span>
+                <div class="buttons">
+                    <button class="add-btn">ADD</button>
+                    <button class="like-btn">🤍</button>
+                    <button class="tryon-btn">TRY ON</button>
+                </div>
+            </div>
+            <!-- Product 6 -->
+            <div class="product-card" data-name="Dress">
+                <img src="Dress.jpg" alt="Dress">
+                <h3>Dress</h3>
+                <div class="price"><span class="current">₹299</span><span class="old">₹349</span></div>
+                <span class="free-delivery">FREE DELIVERY</span>
+                <div class="buttons">
+                    <button class="add-btn">ADD</button>
+                    <button class="like-btn">🤍</button>
+                    <button class="tryon-btn">TRY ON</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="tryonModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Virtual Try-On</h3>
+            <p>Upload a photo to see how the dress looks on you!</p>
+            <input type="file" id="photoUpload" accept="image/*">
+            <canvas id="tryonCanvas"></canvas>
+            <button id="demoTryOn">Try Now</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ---------- SEARCH ----------
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase();
+                    document.querySelectorAll('.product-card').forEach(card => {
+                        const name = card.getAttribute('data-name').toLowerCase();
+                        card.style.display = name.includes(query) ? '' : 'none';
+                    });
+                });
+            }
+
+            // ---------- CART ----------
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            function updateCartCount() {
+                const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartSpan = document.getElementById('cartCount');
+                if (cartSpan) cartSpan.innerText = total;
+            }
+            updateCartCount();
+
+            document.querySelectorAll('.add-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const card = btn.closest('.product-card');
+                    const name = card.getAttribute('data-name');
+                    const priceElem = card.querySelector('.current');
+                    const price = priceElem ? priceElem.innerText : '₹0';
+                    const image = card.querySelector('img').src;
+
+                    const existing = cart.find(item => item.name === name);
+                    if (existing) existing.quantity++;
+                    else cart.push({ name, price, image, quantity: 1 });
+
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    updateCartCount();
+                    alert(`${name} added to cart!`);
+                });
+            });
+
+            // ---------- LIKE BUTTON ----------
+            let liked = JSON.parse(localStorage.getItem('liked') || '[]');
+            function updateLikeCount() {
+                const likeSpan = document.getElementById('likeCount');
+                if (likeSpan) likeSpan.innerText = liked.length;
+            }
+            updateLikeCount();
+
+            document.querySelectorAll('.like-btn').forEach(btn => {
+                const card = btn.closest('.product-card');
+                const name = card.getAttribute('data-name');
+                btn.innerHTML = liked.includes(name) ? '❤️' : '🤍';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (liked.includes(name)) {
+                        liked = liked.filter(item => item !== name);
+                        btn.innerHTML = '🤍';
+                    } else {
+                        liked.push(name);
+                        btn.innerHTML = '❤️';
+                    }
+                    localStorage.setItem('liked', JSON.stringify(liked));
+                    updateLikeCount();
+                });
+            });
+
+            // ---------- AI TRY ON ----------
+            const modal = document.getElementById('tryonModal');
+            const closeSpan = document.querySelector('.close');
+            const tryonBtns = document.querySelectorAll('.tryon-btn');
+            let currentDressImage = null;
+
+            tryonBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const card = btn.closest('.product-card');
+                    currentDressImage = card.querySelector('img').src;
+                    modal.style.display = 'flex';
+                });
+            });
+
+            closeSpan.addEventListener('click', () => modal.style.display = 'none');
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+
+            const demoBtn = document.getElementById('demoTryOn');
+            const photoUpload = document.getElementById('photoUpload');
+            const canvas = document.getElementById('tryonCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function urlToBase64(url) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    // No crossOrigin needed for local images (CORS fix)
+                    img.onload = () => {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = img.width;
+                        tempCanvas.height = img.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(img, 0, 0);
+                        resolve(tempCanvas.toDataURL('image/jpeg'));
+                    };
+                    img.onerror = reject;
+                    img.src = url;
+                });
+            }
+
+            demoBtn.addEventListener('click', async () => {
+                if (!photoUpload.files.length) {
+                    alert('Please upload a photo first.');
+                    return;
+                }
+                if (!currentDressImage) {
+                    alert('Please click "TRY ON" on a dress first.');
+                    return;
+                }
+
+                demoBtn.textContent = 'Generating...';
+                demoBtn.disabled = true;
+
+              try {
+    const personBase64 = await fileToBase64(photoUpload.files[0]);
+    const dressBase64 = await urlToBase64(currentDressImage);
+
+    // Remove the prefix before sending
+    const rawPersonImage = personBase64.split(',')[1];
+    const rawDressImage = dressBase64.split(',')[1];
+
+    const response = await fetch('http://localhost:3001/api/tryon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            personImage: rawPersonImage,
+            dressImage: rawDressImage
+        })
+    });                     const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        demoBtn.textContent = 'Try Now';
+                        demoBtn.disabled = false;
+                    };
+                    img.src = data.image;
+                } catch (error) {
+                    console.error(error);
+                    alert('Try-on generation failed. Check console.');
+                    demoBtn.textContent = 'Try Now';
+                    demoBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

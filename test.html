@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Add to Cart</title>
+</head>
+<body>
+    <div class="product-card" data-name="Test Dress">
+        <img src="https://picsum.photos/id/20/200/200" width="150">
+        <h3>Test Dress</h3>
+        <div class="price"><span class="current">₹500</span></div>
+        <button class="add-btn">ADD</button>
+    </div>
+    <div>Cart count: <span id="cartCount">0</span></div>
+    <a href="cart.html">View Cart</a>
+
+    <script>
+        // ---------- ADD TO CART ----------
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+        function updateCartCount() {
+            const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').innerText = total;
+        }
+        updateCartCount();
+
+        document.querySelectorAll('.add-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const card = btn.closest('.product-card');
+                const name = card.getAttribute('data-name');
+                const price = card.querySelector('.current').innerText;
+                const image = card.querySelector('img').src;
+
+                const existing = cart.find(item => item.name === name);
+                if (existing) existing.quantity++;
+                else cart.push({ name, price, image, quantity: 1 });
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCartCount();
+                alert(`${name} added to cart!`);
+            });
+        });
+    </script>
+</body>
+</html>

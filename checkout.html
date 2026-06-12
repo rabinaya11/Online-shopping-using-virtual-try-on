@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - JOY BOUTIQUE</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        .checkout-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .cart-summary { background: #f8f9fa; padding: 1rem; border-radius: 12px; margin-bottom: 2rem; }
+        .cart-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.3rem; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 8px; }
+        .submit-btn { background: #2ecc71; color: white; border: none; padding: 0.8rem; width: 100%; border-radius: 40px; font-size: 1.1rem; cursor: pointer; margin-top: 1rem; }
+        .back-link { display: inline-block; margin-bottom: 1rem; color: #3498db; text-decoration: none; }
+        .total { font-size: 1.2rem; font-weight: bold; text-align: right; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="checkout-container">
+        <a href="cart.html" class="back-link">← Back to Cart</a>
+        <h1>Checkout</h1>
+
+        <div class="cart-summary" id="cart-summary"></div>
+
+        <form id="checkout-form">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label for="mobile">Mobile Number *</label>
+                <input type="tel" id="mobile" required pattern="[0-9]{10}" title="10-digit mobile number">
+            </div>
+            <div class="form-group">
+                <label for="address">Delivery Address *</label>
+                <textarea id="address" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="size">Size (for all items) – optional</label>
+                <select id="size">
+                    <option value="">Select size</option>
+                    <option value="XS">XS</option><option value="S">S</option><option value="M">M</option>
+                    <option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option>
+                </select>
+            </div>
+            <button type="submit" class="submit-btn">Proceed to Payment</button>
+        </form>
+    </div>
+
+    <script>
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let total = 0;
+
+        function displayCart() {
+            const container = document.getElementById('cart-summary');
+            if (cart.length === 0) {
+                container.innerHTML = '<p>Your cart is empty.</p>';
+                return;
+            }
+            let html = '<h3>Order Summary</h3>';
+            cart.forEach(item => {
+                const priceNum = parseInt(item.price.replace('₹', ''));
+                const itemTotal = priceNum * item.quantity;
+                total += itemTotal;
+                html += `<div class="cart-item"><span>${item.name} x ${item.quantity}</span><span>₹${itemTotal}</span></div>`;
+            });
+            html += `<div class="total">Total: ₹${total}</div>`;
+            container.innerHTML = html;
+        }
+        displayCart();
+
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (cart.length === 0) {
+                alert('Your cart is empty.');
+                return;
+            }
+
+            const name = document.getElementById('name').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const size = document.getElementById('size').value;
+
+            if (!name || !mobile || !address) {
+                alert('Please fill all required fields.');
+                return;
+            }
+
+            // 1. Create Razorpay order on your backend
+            const response = await fetch('http://localhost:3001/api/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: total })
+            });
+            const order = await response.json();
+
+            if (!order.id) {
+                alert('Failed to create order. Please try again.');
+                return;
+            }
+
+            // 2. Open Razorpay checkout
+            const options = {
+                key: 'rzp_test_SWw1NcnGLIOEkK', 
+                amount: order.amount,
+                currency: order.currency,
+                name: 'JON BOUTIQUE',
+                description: 'Order Payment',
+                order_id: order.id,
+                handler: async (payment) => {
+                    // 3. Verify payment on backend
+                    const verifyRes = await fetch('http://localhost:3001/api/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            order_id: payment.razorpay_order_id,
+                            payment_id: payment.razorpay_payment_id,
+                            signature: payment.razorpay_signature
+                        })
+                    });
+                    const verifyData = await verifyRes.json();
+                    
+                    // FIXED: Check for success: true (backend format)
+                    if (verifyData.success === true) {
+                        // 4. Save order and clear cart
+                        const orderData = {
+                            id: Date.now(),
+                            date: new Date().toLocaleString(),
+                            customer: { name, mobile, address, size },
+                            items: cart,
+                            total: total,
+                            paymentId: payment.razorpay_payment_id
+                        };
+                        let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                        orders.push(orderData);
+                        localStorage.setItem('orders', JSON.stringify(orders));
+                        localStorage.removeItem('cart');
+                        localStorage.setItem('lastOrder', JSON.stringify(orderData));
+                        window.location.href = 'order-success.html';
+                    } else {
+                        alert('Payment verification failed');
+                    }
+                },
+                prefill: { name, email: `${mobile}@example.com`, contact: mobile },
+                theme: { color: '#3399cc' }
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+        });
+    </script>
+</body>
+</html>

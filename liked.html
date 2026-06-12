@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Likes - JOY BOUTIQUE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fafafa;
+            padding: 2rem;
+        }
+        .liked-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+        .liked-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        .liked-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .item-details {
+            flex: 1;
+        }
+        .item-name {
+            font-weight: bold;
+        }
+        .item-price {
+            color: #e67e22;
+        }
+        .remove-like {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .empty-likes {
+            text-align: center;
+            padding: 2rem;
+            color: #7f8c8d;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="liked-container">
+        <a href="index.html" class="back-link">← Back to Shop</a>
+        <h1>Your Liked Items</h1>
+        <div id="liked-items"></div>
+    </div>
+
+    <script>
+        // ---------- Product data (must match your index.html) ----------
+        const products = [
+            { name: "t-shirt", price: "₹160", img: "t-shirt.jpg" },
+            { name: "bodycon", price: "₹308", img: "bodycon.jpg" },
+            { name: "white t-Shirt", price: "₹150", img: "white-tshirt.jpg" }, // match your filename
+            { name: "mix", price: "₹450", img: "mix.jpg" },
+            { name: "Floral", price: "₹530", img: "Floral.jpg" },
+            { name: "Dress", price: "₹299", img: "Dress.jpg" }
+        ];
+
+        // Get liked names from localStorage
+        let likedNames = JSON.parse(localStorage.getItem('liked') || '[]');
+
+        const container = document.getElementById('liked-items');
+
+        function renderLiked() {
+            // Filter products that are liked
+            const likedProducts = products.filter(p => likedNames.includes(p.name));
+            if (likedProducts.length === 0) {
+                container.innerHTML = '<div class="empty-likes">You haven’t liked any items yet.</div>';
+                return;
+            }
+            let html = '';
+            likedProducts.forEach((item, idx) => {
+                html += `
+                    <div class="liked-item" data-name="${item.name}">
+                        <img src="${item.img}" alt="${item.name}">
+                        <div class="item-details">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-price">${item.price}</div>
+                        </div>
+                        <button class="remove-like" data-name="${item.name}">Remove</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+            // Attach remove handlers
+            document.querySelectorAll('.remove-like').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const name = btn.getAttribute('data-name');
+                    likedNames = likedNames.filter(n => n !== name);
+                    localStorage.setItem('liked', JSON.stringify(likedNames));
+                    renderLiked();
+                    // Optionally update the like count on the main page when you return
+                });
+            });
+        }
+
+        renderLiked();
+    </script>
+</body>
+</html>
